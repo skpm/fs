@@ -1,0 +1,25 @@
+{
+  "name": "sketch-module-fs",
+  "version": "0.1.0",
+  "description": "A sketch module to interact with the file system",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mathieudutour/sketch-module-fs.git"
+  },
+  "keywords": [
+    "sketch",
+    "module",
+    "file",
+    "system"
+  ],
+  "author": "Mathieu Dutour <mathieu@dutour.me> (http://mathieu.dutour.me/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mathieudutour/sketch-module-fs/issues"
+  },
+  "homepage": "https://github.com/mathieudutour/sketch-module-fs#readme"
+}
