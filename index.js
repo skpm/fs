@@ -26,7 +26,7 @@ module.exports = {
       var data = p.representationUsingType_properties(encoding || NSPNGFileType, null)
       data.writeToFile_atomically(path, true)
     } else {
-      result = NSString.stringWithString(str).writeToFile_atomically_encoding_error(path, true, encoding || NSUTF8StringEncoding, error)
+      result = NSString.stringWithString(data).writeToFile_atomically_encoding_error(path, true, encoding || NSUTF8StringEncoding, error)
     }
     if (error != null) {
       throw new Error(error)
