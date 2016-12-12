@@ -21,7 +21,7 @@ module.exports = {
     var error = null
     var result
     if (data.TIFFRepresentation) {
-      var tiffData = image.TIFFRepresentation()
+      var tiffData = data.TIFFRepresentation()
       var p = NSBitmapImageRep.imageRepWithData(tiffData)
       var data = p.representationUsingType_properties(encoding || NSPNGFileType, null)
       data.writeToFile_atomically(path, true)

@@ -1,6 +1,6 @@
 {
   "name": "sketch-module-fs",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A sketch module to interact with the file system",
   "main": "index.js",
   "scripts": {
