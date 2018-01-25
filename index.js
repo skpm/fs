@@ -49,8 +49,8 @@ module.exports.chmodSync = function(path, mode) {
     NSFilePosixPermissions: mode
   }, path, err)
 
-  if (err !== null) {
-    throw new Error(err.description())
+  if (err.value() !== null) {
+    throw new Error(err.value())
   }
 }
 
@@ -59,8 +59,8 @@ module.exports.copyFileSync = function(path, dest, flags) {
   var fileManager = NSFileManager.defaultManager()
   fileManager.copyItemAtPath_toPath_error(path, dest, err)
 
-  if (err !== null) {
-    throw new Error(err.description())
+  if (err.value() !== null) {
+    throw new Error(err.value())
   }
 }
 
@@ -73,8 +73,9 @@ module.exports.linkSync = function(existingPath, newPath) {
   var err = MOPointer.alloc().init()
   var fileManager = NSFileManager.defaultManager()
   fileManager.linkItemAtPath_toPath_error(existingPath, newPath, err)
-  if (err !== null) {
-    throw new Error(err.description())
+
+  if (err.value() !== null) {
+    throw new Error(err.value())
   }
 }
 
@@ -84,9 +85,10 @@ module.exports.mkdirSync = function(path, mode) {
   var fileManager = NSFileManager.defaultManager()
   fileManager.createDirectoryAtPath_withIntermediateDirectories_attributes_error(path, false, {
     NSFilePosixPermissions: mode
-  }, error)
-  if (err !== null) {
-    throw new Error(err.description())
+  }, err)
+
+  if (err.value() !== null) {
+    throw new Error(err.value())
   }
 }
 
@@ -146,9 +148,11 @@ module.exports.readlinkSync = function(path) {
   var err = MOPointer.alloc().init()
   var fileManager = NSFileManager.defaultManager()
   var result = fileManager.destinationOfSymbolicLinkAtPath_error(path, err)
-  if (err !== null) {
-    throw new Error(err.description())
+
+  if (err.value() !== null) {
+    throw new Error(err.value())
   }
+
   return result
 }
 
@@ -160,8 +164,9 @@ module.exports.renameSync = function(oldPath, newPath) {
   var err = MOPointer.alloc().init()
   var fileManager = NSFileManager.defaultManager()
   fileManager.moveItemAtPath_toPath_error(oldPath, newPath, err)
-  if (err !== null) {
-    throw new Error(err.description())
+
+  if (err.value() !== null) {
+    throw new Error(err.value())
   }
 }
 
@@ -169,8 +174,9 @@ module.exports.rmdirSync = function(path) {
   var err = MOPointer.alloc().init()
   var fileManager = NSFileManager.defaultManager()
   fileManager.removeItemAtPath_error(path, err)
-  if (err !== null) {
-    throw new Error(err.description())
+
+  if (err.value() !== null) {
+    throw new Error(err.value())
   }
 }
 
@@ -178,8 +184,9 @@ module.exports.statSync = function(path) {
   var err = MOPointer.alloc().init()
   var fileManager = NSFileManager.defaultManager()
   var result = fileManager.attributesOfItemAtPath_error(path, err)
-  if (err !== null) {
-    throw new Error(err.description())
+
+  if (err.value() !== null) {
+    throw new Error(err.value())
   }
 
   return {
@@ -215,8 +222,9 @@ module.exports.symlinkSync = function(target, path) {
   var err = MOPointer.alloc().init()
   var fileManager = NSFileManager.defaultManager()
   var result = fileManager.createSymbolicLinkAtPath_withDestinationPath_error(path, target, err)
-  if (err !== null) {
-    throw new Error(err.description())
+
+  if (err.value() !== null) {
+    throw new Error(err.value())
   }
 }
 
@@ -229,9 +237,10 @@ module.exports.truncateSync = function(path, len) {
 module.exports.unlinkSync = function(path) {
   var err = MOPointer.alloc().init()
   var fileManager = NSFileManager.defaultManager()
-  var result = fileManager.removeItemAtPath_error:(path, err)
-  if (err !== null) {
-    throw new Error(err.description())
+  var result = fileManager.removeItemAtPath_error(path, err)
+
+  if (err.value() !== null) {
+    throw new Error(err.value())
   }
 }
 
@@ -241,8 +250,9 @@ module.exports.utimesSync = function(path, aTime, mTime) {
   var result = fileManager.setAttributes_ofItemAtPath_error({
     NSFileModificationDate: aTime
   }, path, err)
-  if (err !== null) {
-    throw new Error(err.description())
+
+  if (err.value() !== null) {
+    throw new Error(err.value())
   }
 }
 
