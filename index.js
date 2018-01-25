@@ -66,7 +66,7 @@ module.exports.copyFileSync = function(path, dest, flags) {
 
 module.exports.existsSync = function(path) {
   var fileManager = NSFileManager.defaultManager()
-  return fileManager.fileExistsAtPath(path)
+  return Boolean(fileManager.fileExistsAtPath(path))
 }
 
 module.exports.linkSync = function(existingPath, newPath) {
