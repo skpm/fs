@@ -16,19 +16,19 @@ module.exports.accessSync = function(path, mode) {
     case 0:
       return module.exports.existsSync(path)
     case 1:
-      return fileManager.isExecutableFileAtPath(path)
+      return Boolean(fileManager.isExecutableFileAtPath(path))
     case 2:
-      return fileManager.isWritableFileAtPath(path)
+      return Boolean(fileManager.isWritableFileAtPath(path))
     case 3:
-      return fileManager.isExecutableFileAtPath(path) && fileManager.isWritableFileAtPath(path)
+      return Boolean(fileManager.isExecutableFileAtPath(path) && fileManager.isWritableFileAtPath(path))
     case 4:
-      return fileManager.isReadableFileAtPath(path)
+      return Boolean(fileManager.isReadableFileAtPath(path))
     case 5:
-      return fileManager.isReadableFileAtPath(path) && fileManager.isExecutableFileAtPath(path)
+      return Boolean(fileManager.isReadableFileAtPath(path) && fileManager.isExecutableFileAtPath(path))
     case 6:
-      return fileManager.isReadableFileAtPath(path) && fileManager.isWritableFileAtPath(path)
+      return Boolean(fileManager.isReadableFileAtPath(path) && fileManager.isWritableFileAtPath(path))
     case 7:
-      return fileManager.isReadableFileAtPath(path) && fileManager.isWritableFileAtPath(path) && fileManager.isExecutableFileAtPath(path)
+      return Boolean(fileManager.isReadableFileAtPath(path) && fileManager.isWritableFileAtPath(path) && fileManager.isExecutableFileAtPath(path))
   }
 }
 
@@ -66,7 +66,7 @@ module.exports.copyFileSync = function(path, dest, flags) {
 
 module.exports.existsSync = function(path) {
   var fileManager = NSFileManager.defaultManager()
-  return fileManager.fileExistsAtPath(path)
+  return Boolean(fileManager.fileExistsAtPath(path))
 }
 
 module.exports.linkSync = function(existingPath, newPath) {
@@ -124,18 +124,18 @@ module.exports.readFileSync = function(path, options) {
   var data = fileManager.contentsAtPath(path)
   switch (encoding) {
     case 'utf8':
-      return NSString.alloc().initWithData_encoding(data, NSUTF8StringEncoding)
+      return String(NSString.alloc().initWithData_encoding(data, NSUTF8StringEncoding))
     case 'ascii':
-      return NSString.alloc().initWithData_encoding(data, NSASCIIStringEncoding)
+      return String(NSString.alloc().initWithData_encoding(data, NSASCIIStringEncoding))
     case 'utf16le':
     case 'ucs2':
-      return NSString.alloc().initWithData_encoding(data, NSUTF16LittleEndianStringEncoding)
+      return String(NSString.alloc().initWithData_encoding(data, NSUTF16LittleEndianStringEncoding))
     case 'base64':
       var nsdataDecoded = NSData.alloc().initWithBase64EncodedData_options(data, 0)
-      return NSString.alloc().initWithData_encoding(nsdataDecoded, NSUTF8StringEncoding)
+      return String(NSString.alloc().initWithData_encoding(nsdataDecoded, NSUTF8StringEncoding))
     case 'latin1':
     case 'binary':
-      return NSString.alloc().initWithData_encoding(data, NSISOLatin1StringEncoding)
+      return String(NSString.alloc().initWithData_encoding(data, NSISOLatin1StringEncoding))
     case 'hex':
       // TODO: how?
       return data
@@ -269,22 +269,28 @@ module.exports.writeFileSync = function(path, data, options) {
 
   switch (encoding) {
     case 'utf8':
-      return string.writeToFile_atomically_encoding_error(path, true, NSUTF8StringEncoding, err)
+      string.writeToFile_atomically_encoding_error(path, true, NSUTF8StringEncoding, err)
+      return
     case 'ascii':
-      return string.writeToFile_atomically_encoding_error(path, true, NSASCIIStringEncoding)
+      string.writeToFile_atomically_encoding_error(path, true, NSASCIIStringEncoding)
+      return
     case 'utf16le':
     case 'ucs2':
-      return string.writeToFile_atomically_encoding_error(path, true, NSUTF16LittleEndianStringEncoding)
+      string.writeToFile_atomically_encoding_error(path, true, NSUTF16LittleEndianStringEncoding)
+      return
     case 'base64':
       var plainData = string.dataUsingEncoding(NSUTF8StringEncoding)
       var nsdataEncoded = plainData.base64EncodedStringWithOptions(0)
-      return nsdataEncoded.writeToFile_atomically(path, true)
+      nsdataEncoded.writeToFile_atomically(path, true)
+      return
     case 'latin1':
     case 'binary':
-      return string.writeToFile_atomically_encoding_error(path, true, NSISOLatin1StringEncoding)
+      string.writeToFile_atomically_encoding_error(path, true, NSISOLatin1StringEncoding)
+      return
     case 'hex':
       // TODO: how?
     default:
-      return string.writeToFile_atomically_encoding_error(path, true, NSUTF8StringEncoding, err)
+      string.writeToFile_atomically_encoding_error(path, true, NSUTF8StringEncoding, err)
+      return
   }
 }
