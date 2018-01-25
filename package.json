@@ -23,6 +23,6 @@
   },
   "homepage": "https://github.com/skpm/fs#readme",
   "devDependencies": {
-    "@skpm/test-runner": "^0.1.29"
+    "@skpm/test-runner": "^0.1.30"
   }
 }
