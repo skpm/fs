@@ -4,7 +4,7 @@
   "description": "A sketch module to interact with the file system",
   "main": "index.js",
   "scripts": {
-    "test": "skpm-test --enable-async --app=xcode"
+    "test": "skpm-test"
   },
   "repository": {
     "type": "git",
