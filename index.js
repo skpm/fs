@@ -190,24 +190,24 @@ module.exports.statSync = function(path) {
   }
 
   return {
-    dev: result.NSFileDeviceIdentifier,
+    dev: String(result.NSFileDeviceIdentifier),
     // ino: 48064969, The file system specific "Inode" number for the file.
     mode: result.NSFileType | result.NSFilePosixPermissions,
-    nlink: result.NSFileReferenceCount,
-    uid: result.NSFileOwnerAccountID,
-    gid: result.NSFileGroupOwnerAccountID,
+    nlink: Number(result.NSFileReferenceCount),
+    uid: String(result.NSFileOwnerAccountID),
+    gid: String(result.NSFileGroupOwnerAccountID),
     // rdev: 0, A numeric device identifier if the file is considered "special".
-    size: result.NSFileSize,
+    size: Number(result.NSFileSize),
     // blksize: 4096, The file system block size for i/o operations.
     // blocks: 8, The number of blocks allocated for this file.
-    atimeMs: result.NSFileModificationDate.timeIntervalSince1970() * 1000,
-    mtimeMs: result.NSFileModificationDate.timeIntervalSince1970() * 1000,
-    ctimeMs: result.NSFileModificationDate.timeIntervalSince1970() * 1000,
-    birthtimeMs: result.NSFileCreationDate.timeIntervalSince1970() * 1000,
-    atime: new Date(result.NSFileModificationDate.timeIntervalSince1970() * 1000 + 0.5), // the 0.5 comes from the node source. Not sure why it's added but in doubt...
-    mtime: new Date(result.NSFileModificationDate.timeIntervalSince1970() * 1000 + 0.5),
-    ctime: new Date(result.NSFileModificationDate.timeIntervalSince1970() * 1000 + 0.5),
-    birthtime: new Date(result.NSFileCreationDate.timeIntervalSince1970() * 1000 + 0.5),
+    atimeMs: Number(result.NSFileModificationDate.timeIntervalSince1970()) * 1000,
+    mtimeMs: Number(result.NSFileModificationDate.timeIntervalSince1970()) * 1000,
+    ctimeMs: Number(result.NSFileModificationDate.timeIntervalSince1970()) * 1000,
+    birthtimeMs: Number(result.NSFileCreationDate.timeIntervalSince1970()) * 1000,
+    atime: new Date(Number(result.NSFileModificationDate.timeIntervalSince1970()) * 1000 + 0.5), // the 0.5 comes from the node source. Not sure why it's added but in doubt...
+    mtime: new Date(Number(result.NSFileModificationDate.timeIntervalSince1970()) * 1000 + 0.5),
+    ctime: new Date(Number(result.NSFileModificationDate.timeIntervalSince1970()) * 1000 + 0.5),
+    birthtime: new Date(Number(result.NSFileCreationDate.timeIntervalSince1970()) * 1000 + 0.5),
     isBlockDevice: function() { return result.NSFileType === NSFileTypeBlockSpecial },
     isCharacterDevice: function() { return result.NSFileType === NSFileTypeCharacterSpecial },
     isDirectory: function() { return result.NSFileType === NSFileTypeDirectory },
