@@ -119,7 +119,6 @@ module.exports.readdirSync = function(path) {
 
 module.exports.readFileSync = function(path, options) {
   var encoding = options && options.encoding ? options.encoding : (options ? options : 'buffer')
-  var err = MOPointer.alloc().init()
   var fileManager = NSFileManager.defaultManager()
   var data = fileManager.contentsAtPath(path)
   switch (encoding) {
@@ -272,11 +271,11 @@ module.exports.writeFileSync = function(path, data, options) {
       string.writeToFile_atomically_encoding_error(path, true, NSUTF8StringEncoding, err)
       return
     case 'ascii':
-      string.writeToFile_atomically_encoding_error(path, true, NSASCIIStringEncoding)
+      string.writeToFile_atomically_encoding_error(path, true, NSASCIIStringEncoding, err)
       return
     case 'utf16le':
     case 'ucs2':
-      string.writeToFile_atomically_encoding_error(path, true, NSUTF16LittleEndianStringEncoding)
+      string.writeToFile_atomically_encoding_error(path, true, NSUTF16LittleEndianStringEncoding, err)
       return
     case 'base64':
       var plainData = string.dataUsingEncoding(NSUTF8StringEncoding)
@@ -285,7 +284,7 @@ module.exports.writeFileSync = function(path, data, options) {
       return
     case 'latin1':
     case 'binary':
-      string.writeToFile_atomically_encoding_error(path, true, NSISOLatin1StringEncoding)
+      string.writeToFile_atomically_encoding_error(path, true, NSISOLatin1StringEncoding, err)
       return
     case 'hex':
       // TODO: how?
