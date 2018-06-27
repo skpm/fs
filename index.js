@@ -33,7 +33,7 @@ module.exports.accessSync = function(path, mode) {
 }
 
 module.exports.appendFileSync = function(file, _data, options) {
-  var data = _data && _data.mocha && _data.mocha().class() === 'NSData' ? _data : NSString.stringWithString(data || '')
+  var data = _data && _data.mocha && _data.mocha().class() === 'NSData' ? _data : NSString.stringWithString(_data || '')
 
   if (!module.exports.existsSync(file)) {
     data.writeToFile_atomically(file, true)
