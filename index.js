@@ -32,16 +32,51 @@ module.exports.accessSync = function(path, mode) {
   }
 }
 
-module.exports.appendFileSync = function(file, _data, options) {
-  var data = _data && _data.mocha && _data.mocha().class() === 'NSData' ? _data : NSString.stringWithString(_data || '')
-
+module.exports.appendFileSync = function(file, data, options) {
   if (!module.exports.existsSync(file)) {
-    data.writeToFile_atomically(file, true)
-  } else {
-    var handle = NSFileHandle.fileHandleForWritingAtPath(file)
-    handle.seekToEndOfFile()
-    handle.writeData(data.dataUsingEncoding(NSUTF8StringEncoding))
+    return module.exports.writeFileSync(file, data, options)
   }
+
+  var handle = NSFileHandle.fileHandleForWritingAtPath(file)
+  handle.seekToEndOfFile()
+
+  if (data && data.mocha && data.mocha().class() === 'NSData') {
+    handle.writeData(data)
+    return
+  }
+
+  var encoding = options && options.encoding ? options.encoding : (options ? options : 'utf8')
+
+  var string = NSString.stringWithString(data)
+  var nsdata
+
+  switch (encoding) {
+    case 'utf8':
+      nsdata = string.dataUsingEncoding(NSUTF8StringEncoding)
+      break
+    case 'ascii':
+      nsdata = string.dataUsingEncoding(NSASCIIStringEncoding)
+      break
+    case 'utf16le':
+    case 'ucs2':
+      nsdata = string.dataUsingEncoding(NSUTF16LittleEndianStringEncoding)
+      break
+    case 'base64':
+      var plainData = string.dataUsingEncoding(NSUTF8StringEncoding)
+      nsdata = plainData.base64EncodedStringWithOptions(0).dataUsingEncoding(NSUTF8StringEncoding)
+      break
+    case 'latin1':
+    case 'binary':
+      nsdata = string.dataUsingEncoding(NSISOLatin1StringEncoding)
+      break
+    case 'hex':
+      // TODO: how?
+    default:
+      nsdata = string.dataUsingEncoding(NSUTF8StringEncoding)
+      break
+  }
+
+  handle.writeData(data)
 }
 
 module.exports.chmodSync = function(path, mode) {
@@ -271,27 +306,31 @@ module.exports.writeFileSync = function(path, data, options) {
   switch (encoding) {
     case 'utf8':
       string.writeToFile_atomically_encoding_error(path, true, NSUTF8StringEncoding, err)
-      return
+      break
     case 'ascii':
       string.writeToFile_atomically_encoding_error(path, true, NSASCIIStringEncoding, err)
-      return
+      break
     case 'utf16le':
     case 'ucs2':
       string.writeToFile_atomically_encoding_error(path, true, NSUTF16LittleEndianStringEncoding, err)
-      return
+      break
     case 'base64':
       var plainData = string.dataUsingEncoding(NSUTF8StringEncoding)
       var nsdataEncoded = plainData.base64EncodedStringWithOptions(0)
       nsdataEncoded.writeToFile_atomically(path, true)
-      return
+      break
     case 'latin1':
     case 'binary':
       string.writeToFile_atomically_encoding_error(path, true, NSISOLatin1StringEncoding, err)
-      return
+      break
     case 'hex':
       // TODO: how?
     default:
       string.writeToFile_atomically_encoding_error(path, true, NSUTF8StringEncoding, err)
-      return
+      break
+  }
+
+  if (err.value() !== null) {
+    throw new Error(err.value())
   }
 }
