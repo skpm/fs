@@ -1,5 +1,16 @@
 // TODO: async. Should probably be done with NSFileHandle and some notifications
 // TODO: file descriptor. Needs to be done with NSFileHandle
+var Buffer = require('buffer').Buffer
+
+function encodingFromOptions(options, defaultValue) {
+  return options && options.encoding
+    ? String(options.encoding)
+    : (
+      options
+        ? String(options)
+        : defaultValue
+    )
+}
 
 module.exports.constants = {
   F_OK: 0,
@@ -40,43 +51,11 @@ module.exports.appendFileSync = function(file, data, options) {
   var handle = NSFileHandle.fileHandleForWritingAtPath(file)
   handle.seekToEndOfFile()
 
-  if (data && data.mocha && data.mocha().class() === 'NSData') {
-    handle.writeData(data)
-    return
-  }
+  var encoding = encodingFromOptions(options, 'utf8')
 
-  var encoding = options && options.encoding ? options.encoding : (options ? options : 'utf8')
+  var nsdata = Buffer.from(data, encoding === 'NSData' || encoding === 'buffer' ? undefined : encoding).toNSData()
 
-  var string = NSString.stringWithString(data)
-  var nsdata
-
-  switch (encoding) {
-    case 'utf8':
-      nsdata = string.dataUsingEncoding(NSUTF8StringEncoding)
-      break
-    case 'ascii':
-      nsdata = string.dataUsingEncoding(NSASCIIStringEncoding)
-      break
-    case 'utf16le':
-    case 'ucs2':
-      nsdata = string.dataUsingEncoding(NSUTF16LittleEndianStringEncoding)
-      break
-    case 'base64':
-      var plainData = string.dataUsingEncoding(NSUTF8StringEncoding)
-      nsdata = plainData.base64EncodedStringWithOptions(0).dataUsingEncoding(NSUTF8StringEncoding)
-      break
-    case 'latin1':
-    case 'binary':
-      nsdata = string.dataUsingEncoding(NSISOLatin1StringEncoding)
-      break
-    case 'hex':
-      // TODO: how?
-    default:
-      nsdata = string.dataUsingEncoding(NSUTF8StringEncoding)
-      break
-  }
-
-  handle.writeData(data)
+  handle.writeData(nsdata)
 }
 
 module.exports.chmodSync = function(path, mode) {
@@ -149,34 +128,23 @@ module.exports.readdirSync = function(path) {
   var paths = fileManager.subpathsAtPath(path)
   var arr = []
   for (var i = 0; i < paths.length; i++) {
-    arr.push(paths[i])
+    arr.push(String(paths[i]))
   }
   return arr
 }
 
 module.exports.readFileSync = function(path, options) {
-  var encoding = options && options.encoding ? options.encoding : (options ? options : 'buffer')
+  var encoding = encodingFromOptions(options, 'buffer')
   var fileManager = NSFileManager.defaultManager()
   var data = fileManager.contentsAtPath(path)
-  switch (encoding) {
-    case 'utf8':
-      return String(NSString.alloc().initWithData_encoding(data, NSUTF8StringEncoding))
-    case 'ascii':
-      return String(NSString.alloc().initWithData_encoding(data, NSASCIIStringEncoding))
-    case 'utf16le':
-    case 'ucs2':
-      return String(NSString.alloc().initWithData_encoding(data, NSUTF16LittleEndianStringEncoding))
-    case 'base64':
-      var nsdataDecoded = NSData.alloc().initWithBase64EncodedData_options(data, 0)
-      return String(NSString.alloc().initWithData_encoding(nsdataDecoded, NSUTF8StringEncoding))
-    case 'latin1':
-    case 'binary':
-      return String(NSString.alloc().initWithData_encoding(data, NSISOLatin1StringEncoding))
-    case 'hex':
-      // TODO: how?
-      return data
-    default:
-      return data
+  var buffer = Buffer.from(data)
+
+  if (encoding === 'buffer') {
+    return buffer
+  } else if (encoding === 'NSData') {
+    return buffer.toNSData()
+  } else {
+    return buffer.toString(encoding)
   }
 }
 
@@ -189,11 +157,11 @@ module.exports.readlinkSync = function(path) {
     throw new Error(err.value())
   }
 
-  return result
+  return String(result)
 }
 
 module.exports.realpathSync = function(path) {
-  return NSString.stringByResolvingSymlinksInPath(path)
+  return String(NSString.stringByResolvingSymlinksInPath(path))
 }
 
 module.exports.renameSync = function(oldPath, newPath) {
@@ -293,44 +261,9 @@ module.exports.utimesSync = function(path, aTime, mTime) {
 }
 
 module.exports.writeFileSync = function(path, data, options) {
-  var encoding = options && options.encoding ? options.encoding : (options ? options : 'utf8')
+  var encoding = encodingFromOptions(options, 'utf8')
 
-  if (data && data.mocha && data.mocha().class() === 'NSData') {
-    data.writeToFile_atomically(path, true)
-    return
-  }
+  var nsdata = Buffer.from(data, encoding === 'NSData' || encoding === 'buffer' ? undefined : encoding).toNSData()
 
-  var err = MOPointer.alloc().init()
-  var string = NSString.stringWithString(data)
-
-  switch (encoding) {
-    case 'utf8':
-      string.writeToFile_atomically_encoding_error(path, true, NSUTF8StringEncoding, err)
-      break
-    case 'ascii':
-      string.writeToFile_atomically_encoding_error(path, true, NSASCIIStringEncoding, err)
-      break
-    case 'utf16le':
-    case 'ucs2':
-      string.writeToFile_atomically_encoding_error(path, true, NSUTF16LittleEndianStringEncoding, err)
-      break
-    case 'base64':
-      var plainData = string.dataUsingEncoding(NSUTF8StringEncoding)
-      var nsdataEncoded = plainData.base64EncodedStringWithOptions(0)
-      nsdataEncoded.writeToFile_atomically(path, true)
-      break
-    case 'latin1':
-    case 'binary':
-      string.writeToFile_atomically_encoding_error(path, true, NSISOLatin1StringEncoding, err)
-      break
-    case 'hex':
-      // TODO: how?
-    default:
-      string.writeToFile_atomically_encoding_error(path, true, NSUTF8StringEncoding, err)
-      break
-  }
-
-  if (err.value() !== null) {
-    throw new Error(err.value())
-  }
+  nsdata.writeToFile_atomically(path, true)
 }
