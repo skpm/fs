@@ -18,6 +18,10 @@ test('should return true if file exists', (context) => {
   expect(existsSync(getScriptFolder(context) + '/manifest.json')).toBe(true)
 })
 
+test('should return false if file do not exists', (context) => {
+  expect(existsSync(getScriptFolder(context) + '/manifest.jsonaoigwhdoiagw')).toBe(false)
+})
+
 test('should create a directory', (context) => {
   expect(mkdirSync(getScriptFolder(context) + '/test')).toBe(undefined)
 })

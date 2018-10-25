@@ -82,7 +82,7 @@ module.exports.copyFileSync = function(path, dest, flags) {
 
 module.exports.existsSync = function(path) {
   var fileManager = NSFileManager.defaultManager()
-  return Boolean(fileManager.fileExistsAtPath(path))
+  return Boolean(Number(fileManager.fileExistsAtPath(path)))
 }
 
 module.exports.linkSync = function(existingPath, newPath) {
@@ -263,7 +263,9 @@ module.exports.utimesSync = function(path, aTime, mTime) {
 module.exports.writeFileSync = function(path, data, options) {
   var encoding = encodingFromOptions(options, 'utf8')
 
-  var nsdata = Buffer.from(data, encoding === 'NSData' || encoding === 'buffer' ? undefined : encoding).toNSData()
+  var nsdata = Buffer.from(
+    data, encoding === 'NSData' || encoding === 'buffer' ? undefined : encoding
+  ).toNSData()
 
   nsdata.writeToFile_atomically(path, true)
 }
