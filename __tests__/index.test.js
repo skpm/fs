@@ -6,20 +6,25 @@ function getScriptFolder(context) {
   return parts.join('/')
 }
 
-test('should return the access of a file', (context) => {
-  const file = getScriptFolder(context) + '/manifest.json'
-  expect(accessSync(file)).toBe(true) // exists
-  expect(accessSync(file, constants.X_OK)).toBe(false) // executable
-  expect(accessSync(file, constants.W_OK)).toBe(true) // writable
-  expect(accessSync(file, constants.R_OK)).toBe(true) // readable
-})
-
 test('should return true if file exists', (context) => {
   expect(existsSync(getScriptFolder(context) + '/manifest.json')).toBe(true)
 })
 
 test('should return false if file do not exists', (context) => {
   expect(existsSync(getScriptFolder(context) + '/manifest.jsonaoigwhdoiagw')).toBe(false)
+})
+
+test('should return the access of a file', (context) => {
+  const file = getScriptFolder(context) + '/manifest.json'
+  expect(accessSync(file)).toBe(undefined) // exists
+  try {
+    accessSync(file, constants.X_OK) // executable
+    expect(true).toBe(false)
+  } catch (err) {
+    expect(true).toBe(true)
+  }
+  expect(accessSync(file, constants.W_OK)).toBe(undefined) // writable
+  expect(accessSync(file, constants.R_OK)).toBe(undefined) // readable
 })
 
 test('should create a directory', (context) => {

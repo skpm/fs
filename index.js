@@ -25,21 +25,33 @@ module.exports.accessSync = function(path, mode) {
 
   switch (mode) {
     case 0:
-      return module.exports.existsSync(path)
+      canAccess = module.exports.existsSync(path)
+      break
     case 1:
-      return Boolean(fileManager.isExecutableFileAtPath(path))
+      canAccess = Boolean(Number(fileManager.isExecutableFileAtPath(path)))
+      break
     case 2:
-      return Boolean(fileManager.isWritableFileAtPath(path))
+      canAccess = Boolean(Number(fileManager.isWritableFileAtPath(path)))
+      break
     case 3:
-      return Boolean(fileManager.isExecutableFileAtPath(path) && fileManager.isWritableFileAtPath(path))
+      canAccess = Boolean(Number(fileManager.isExecutableFileAtPath(path))) && Boolean(Number(fileManager.isWritableFileAtPath(path)))
+      break
     case 4:
-      return Boolean(fileManager.isReadableFileAtPath(path))
+      canAccess = Boolean(Number(fileManager.isReadableFileAtPath(path)))
+      break
     case 5:
-      return Boolean(fileManager.isReadableFileAtPath(path) && fileManager.isExecutableFileAtPath(path))
+      canAccess = Boolean(Number(fileManager.isReadableFileAtPath(path))) && Boolean(Number(fileManager.isExecutableFileAtPath(path)))
+      break
     case 6:
-      return Boolean(fileManager.isReadableFileAtPath(path) && fileManager.isWritableFileAtPath(path))
+      canAccess = Boolean(Number(fileManager.isReadableFileAtPath(path))) && Boolean(Number(fileManager.isWritableFileAtPath(path)))
+      break
     case 7:
-      return Boolean(fileManager.isReadableFileAtPath(path) && fileManager.isWritableFileAtPath(path) && fileManager.isExecutableFileAtPath(path))
+      canAccess = Boolean(Number(fileManager.isReadableFileAtPath(path))) && Boolean(Number(fileManager.isWritableFileAtPath(path))) && Boolean(Number(fileManager.isExecutableFileAtPath(path)))
+      break
+  }
+
+  if (!canAccess) {
+    throw new Error('Can\'t access ' + String(path))
   }
 }
 
