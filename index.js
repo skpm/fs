@@ -1,6 +1,11 @@
 // TODO: async. Should probably be done with NSFileHandle and some notifications
 // TODO: file descriptor. Needs to be done with NSFileHandle
 var Buffer = require('buffer').Buffer
+var createFiber = require('sketch/async').createFiber
+var ObjCClass = require('./cocoascript-class')
+
+// We create one ObjC class for ourselves here so we don't recreate it every time
+var ReadFileDelegateClass
 
 function encodingFromOptions(options, defaultValue) {
   return options && options.encoding
@@ -143,6 +148,75 @@ module.exports.readdirSync = function(path) {
     arr.push(String(paths[i]))
   }
   return arr
+}
+
+module.exports.readFile = function(path, options, callback) {
+  var encoding = encodingFromOptions(options, 'buffer')
+  var fileInstance = NSFileHandle.fileHandleForReadingAtPath(path)
+  if (!fileInstance) {
+    callback(
+      new Error("ENOENT Couldn't read the file.")
+    )
+    return
+  }
+
+  var notificationCenter = NSNotificationCenter.defaultCenter()
+
+  if (!ReadFileDelegateClass) {
+    ReadFileDelegateClass = ObjCClass({
+      classname: 'ReadFileDelegateClass',
+      utils: null,
+
+      'onReadCompleted:': function(notification) {
+        if (notification.userInfo().NSFileHandleError) {
+          this.utils.callback(
+            new Error("Couldn't read the file. Error code: " + notification.userInfo().NSFileHandleError)
+          )
+        } else {
+          // we need to cast to data because buffer doesn't realize it's an NSData
+          var data = NSString.alloc()
+            .initWithData_encoding(notification.userInfo().NSFileHandleNotificationDataItem, NSISOLatin1StringEncoding)
+            .dataUsingEncoding(NSISOLatin1StringEncoding)
+          var buffer = Buffer.from(data)
+          if (this.utils.encoding === 'buffer') {
+            this.utils.callback(null, buffer)
+          } else if (this.utils.encoding === 'NSData') {
+            this.utils.callback(null, buffer.toNSData())
+          } else {
+            this.utils.callback(null, buffer.toString(this.utils.encoding))
+          }
+        }
+
+        this.utils.fiber.cleanup()
+      }
+    })
+  }
+
+  var fiber = createFiber()
+
+  var observerInstance = ReadFileDelegateClass.new()
+  observerInstance.utils = NSDictionary.dictionaryWithDictionary({
+    encoding: encoding,
+    fiber: fiber,
+    callback: callback,
+  })
+
+  fiber.onCleanup(function() {
+    // need to unregister the observer when the fiber is cleaned up
+    notificationCenter.removeObserver_name_object(
+      observerInstance,
+      NSFileHandleReadToEndOfFileCompletionNotification,
+      fileInstance
+    )
+  })
+
+  notificationCenter.addObserver_selector_name_object(
+    observerInstance,
+    NSSelectorFromString('onReadCompleted:'),
+    NSFileHandleReadToEndOfFileCompletionNotification,
+    fileInstance
+  )
+  fileInstance.readToEndOfFileInBackgroundAndNotify()
 }
 
 module.exports.readFileSync = function(path, options) {
