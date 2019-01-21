@@ -24,10 +24,17 @@ function addObserver(name, notificationType, callback) {
 
 function fsError(options) {
   var ERROR_MESSAGES = {
-    '-2': 'no such file or directory'
+    '-2': 'no such file or directory',
+    '-13': 'permission denied',
+    '-21': 'illegal operation on a directory'
   }
 
-  return Object.assign(new Error(options.code + ': ' + ERROR_MESSAGES[options.errno] + ', ' + options.syscall + ' \'' + options.path + '\''), options)
+  return Object.assign(new Error(
+    options.code + ': '
+    + ERROR_MESSAGES[options.errno] + ', '
+    + options.syscall
+    + (options.path ? ' \'' + options.path + '\'' : '')
+  ), options)
 }
 
 function encodingFromOptions(options, defaultValue) {
@@ -189,8 +196,8 @@ var fn = function(sync, path, options, callback) {
     }
   }
   // read data
+  var fileManager = NSFileManager.defaultManager()
   if (sync) {
-    var fileManager = NSFileManager.defaultManager()
     return handler(fileManager.contentsAtPath(path), options)
   } else {
     var fileInstance = NSFileHandle.fileHandleForReadingAtPath(path)
@@ -200,12 +207,36 @@ var fn = function(sync, path, options, callback) {
       })
       fileInstance.readInBackgroundAndNotify()
     } else {
-      callback && callback(fsError({
-        errno: -2,
-        code: 'ENOENT',
-        syscall: 'open',
-        path: path
-      }))
+      var isExisted = fileManager.fileExistsAtPath(path)
+      var isDirectory = fileManager.fileExistsAtPath_isDirectory(path, true)
+      var isReadable = fileManager.isReadableFileAtPath(path)
+      // need to use NSFileManager to detect whether it is existed or readable
+      if (callback) {
+        if (!isExisted) {
+          // not existed
+          callback(fsError({
+            errno: -2,
+            code: 'ENOENT',
+            syscall: 'open',
+            path: path
+          }))
+        } else if (!isReadable) {
+          // permission denied
+          callback(fsError({
+            errno: -13,
+            code: 'EACCES',
+            syscall: 'open',
+            path: path
+          }))
+        } else if (isDirectory) {
+          // directory
+          callback(fsError({
+            errno: -21,
+            code: 'EISDIR',
+            syscall: 'read'
+          }))
+        }
+      }
     }
   }
 }
