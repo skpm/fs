@@ -1,6 +1,41 @@
 // TODO: async. Should probably be done with NSFileHandle and some notifications
 // TODO: file descriptor. Needs to be done with NSFileHandle
 var Buffer = require('buffer').Buffer
+var Delegate = require('./delegate')
+var notificationCenter = NSNotificationCenter.defaultCenter()
+
+function dispatchToNSData(dispatchData) {
+  return NSString.alloc().initWithData_encoding(dispatchData, NSISOLatin1StringEncoding)
+    .dataUsingEncoding(NSISOLatin1StringEncoding)
+}
+
+function addObserver(name, notificationType, callback) {
+  var option = {}
+  var observerInstance
+  option[name] = function(notification) {
+    // need to unregister the observer after callback
+    notificationCenter.removeObserver_name_object(observerInstance, notificationType, nil)
+    callback && callback(dispatchToNSData(notification.userInfo().NSFileHandleNotificationDataItem))
+  }
+
+  observerInstance = new Delegate(option).getClassInstance()
+  notificationCenter.addObserver_selector_name_object(observerInstance, NSSelectorFromString(name), notificationType, nil)
+}
+
+function fsError(options) {
+  var ERROR_MESSAGES = {
+    '-2': 'no such file or directory',
+    '-13': 'permission denied',
+    '-21': 'illegal operation on a directory'
+  }
+
+  return Object.assign(new Error(
+    options.code + ': '
+    + ERROR_MESSAGES[options.errno] + ', '
+    + options.syscall
+    + (options.path ? ' \'' + options.path + '\'' : '')
+  ), options)
+}
 
 function encodingFromOptions(options, defaultValue) {
   return options && options.encoding
@@ -145,19 +180,74 @@ module.exports.readdirSync = function(path) {
   return arr
 }
 
-module.exports.readFileSync = function(path, options) {
-  var encoding = encodingFromOptions(options, 'buffer')
-  var fileManager = NSFileManager.defaultManager()
-  var data = fileManager.contentsAtPath(path)
-  var buffer = Buffer.from(data)
+var fns = ['readFile', 'readFileSync']
+var fn = function(sync, path, options, callback) {
+  // handle data
+  var handler = function(data, options) {
+    var encoding = encodingFromOptions(options, 'buffer')
+    var buffer = Buffer.from(data)
 
-  if (encoding === 'buffer') {
-    return buffer
-  } else if (encoding === 'NSData') {
-    return buffer.toNSData()
-  } else {
-    return buffer.toString(encoding)
+    if (encoding === 'buffer') {
+      return buffer
+    } else if (encoding === 'NSData') {
+      return buffer.toNSData()
+    } else {
+      return buffer.toString(encoding)
+    }
   }
+  // read data
+  var fileManager = NSFileManager.defaultManager()
+  if (sync) {
+    return handler(fileManager.contentsAtPath(path), options)
+  } else {
+    var fileInstance = NSFileHandle.fileHandleForReadingAtPath(path)
+    if (fileInstance) {
+      addObserver('onReadCompleted:', NSFileHandleReadCompletionNotification, function (data) {
+        callback && callback(null, handler(data, options))
+      })
+      fileInstance.readInBackgroundAndNotify()
+    } else {
+      var isExisted = fileManager.fileExistsAtPath(path)
+      var isDirectory = fileManager.fileExistsAtPath_isDirectory(path, true)
+      var isReadable = fileManager.isReadableFileAtPath(path)
+      // need to use NSFileManager to detect whether it is existed or readable
+      if (callback) {
+        if (!isExisted) {
+          // not existed
+          callback(fsError({
+            errno: -2,
+            code: 'ENOENT',
+            syscall: 'open',
+            path: path
+          }))
+        } else if (!isReadable) {
+          // permission denied
+          callback(fsError({
+            errno: -13,
+            code: 'EACCES',
+            syscall: 'open',
+            path: path
+          }))
+        } else if (isDirectory) {
+          // directory
+          callback(fsError({
+            errno: -21,
+            code: 'EISDIR',
+            syscall: 'read'
+          }))
+        }
+      }
+    }
+  }
+}
+
+for (var i = 0; i < fns.length; i++) {
+  var name = fns[i]
+  var isSync = /sync$/i.test(name)
+
+  module.exports[name] = eval('(function(' + ['path', 'options'].concat(isSync ? [] : ['callback']).join(',') + '){'
+      + 'return fn.apply(this, [' + isSync + '].concat([].slice.call(arguments)))'
+    + '})')
 }
 
 module.exports.readlinkSync = function(path) {
