@@ -2,17 +2,34 @@
 // TODO: file descriptor. Needs to be done with NSFileHandle
 var Buffer = require('buffer').Buffer
 
-var ERROR_MESSAGES = {
-  '-2': 'no such file or directory',
-  '-13': 'permission denied',
-  '-21': 'illegal operation on a directory'
+var ERRORS = {
+  'EPERM': {
+    message: 'operation not permitted',
+    errno: -1
+  },
+  'ENOENT': {
+    message: 'no such file or directory',
+    errno: -2
+  },
+  'EACCES': {
+    message: 'permission denied',
+    errno: -13
+  },
+  'ENOTDIR': {
+    message: 'not a directory',
+    errno: -20
+  },
+  'EISDIR': {
+    message: 'illegal operation on a directory',
+    errno: -21
+  }
 }
 
-function fsError(options) {
+function fsError(code, options) {
   var error = new Error(
-    options.code + ': '
-    + ERROR_MESSAGES[options.errno] + ', '
-    + options.syscall
+    code + ': '
+    + ERRORS[code].message + ', '
+    + (options.syscall || '')
     + (options.path ? ' \'' + options.path + '\'' : '')
   )
 
@@ -20,7 +37,43 @@ function fsError(options) {
     error[k] = options[k]
   })
 
+  error.code = code
+  error.errno = ERRORS[code].errno
+
   return error
+}
+
+function fsErrorForPath(path, shouldBeDir, err, syscall) {
+  var fileManager = NSFileManager.defaultManager()
+  var doesExist = fileManager.fileExistsAtPath(path)
+  if (!doesExist) {
+    return fsError('ENOENT', {
+      path: path,
+      syscall: syscall || 'open'
+    })
+  }
+  var isReadable = fileManager.isReadableFileAtPath(path)
+  if (!isReadable) {
+    return fsError('EACCES', {
+      path: path,
+      syscall: syscall || 'open'
+    })
+  }
+  if (typeof shouldBeDir !== 'undefined') {
+    var isDirectory = module.exports.lstatSync(path).isDirectory()
+    if (isDirectory && !shouldBeDir) {
+      return fsError('EISDIR', {
+        path: path,
+        syscall: syscall || 'read'
+      })
+    } else if (!isDirectory && shouldBeDir) {
+      return fsError('ENOTDIR', {
+        path: path,
+        syscall: syscall || 'read'
+      })
+    }
+  }
+  return new Error(err || ('Unknown error while manipulating ' + path))
 }
 
 function encodingFromOptions(options, defaultValue) {
@@ -99,7 +152,7 @@ module.exports.chmodSync = function(path, mode) {
   }, path, err)
 
   if (err.value() !== null) {
-    throw new Error(err.value())
+    throw fsErrorForPath(path, undefined, err.value())
   }
 }
 
@@ -109,7 +162,7 @@ module.exports.copyFileSync = function(path, dest, flags) {
   fileManager.copyItemAtPath_toPath_error(path, dest, err)
 
   if (err.value() !== null) {
-    throw new Error(err.value())
+    throw fsErrorForPath(path, false, err.value())
   }
 }
 
@@ -124,7 +177,7 @@ module.exports.linkSync = function(existingPath, newPath) {
   fileManager.linkItemAtPath_toPath_error(existingPath, newPath, err)
 
   if (err.value() !== null) {
-    throw new Error(err.value())
+    throw fsErrorForPath(existingPath, undefined, err.value())
   }
 }
 
@@ -171,33 +224,7 @@ module.exports.readFileSync = function(path, options) {
   var fileManager = NSFileManager.defaultManager()
   var data = fileManager.contentsAtPath(path)
   if (!data) {
-    var doesExist = fileManager.fileExistsAtPath(path)
-    if (!doesExist) {
-      throw fsError({
-        errno: -2,
-        code: 'ENOENT',
-        syscall: 'open',
-        path: path
-      })
-    }
-    var isReadable = fileManager.isReadableFileAtPath(path)
-    if (!isReadable) {
-      throw fsError({
-        errno: -13,
-        code: 'EACCES',
-        syscall: 'open',
-        path: path
-      })
-    }
-    var isDirectory = fileManager.fileExistsAtPath_isDirectory(path, true)
-    if (isDirectory) {
-      throw fsError({
-        errno: -21,
-        code: 'EISDIR',
-        syscall: 'read'
-      })
-    }
-    throw new Error('Unknown error while reading file ' + path)
+    throw fsErrorForPath(path, false)
   }
 
   var buffer = Buffer.from(data)
@@ -217,7 +244,7 @@ module.exports.readlinkSync = function(path) {
   var result = fileManager.destinationOfSymbolicLinkAtPath_error(path, err)
 
   if (err.value() !== null) {
-    throw new Error(err.value())
+    throw fsErrorForPath(path, undefined, err.value())
   }
 
   return String(result)
@@ -240,10 +267,10 @@ module.exports.renameSync = function(oldPath, newPath) {
       var err2 = MOPointer.alloc().init()
       fileManager.replaceItemAtURL_withItemAtURL_backupItemName_options_resultingItemURL_error(NSURL.fileURLWithPath(newPath), NSURL.fileURLWithPath(oldPath), null, NSFileManagerItemReplacementUsingNewMetadataOnly, null, err2)
       if (err2.value() !== null) {
-        throw new Error(err2.value())
+        throw fsErrorForPath(oldPath, undefined, err2.value())
       }
     } else {
-      throw new Error(error)
+      throw fsErrorForPath(oldPath, undefined, error)
     }
   }
 }
@@ -251,10 +278,17 @@ module.exports.renameSync = function(oldPath, newPath) {
 module.exports.rmdirSync = function(path) {
   var err = MOPointer.alloc().init()
   var fileManager = NSFileManager.defaultManager()
+  var isDirectory = module.exports.lstatSync(path).isDirectory()
+  if (!isDirectory) {
+    throw fsError('ENOTDIR', {
+      path: path,
+      syscall: 'rmdir'
+    })
+  }
   fileManager.removeItemAtPath_error(path, err)
 
   if (err.value() !== null) {
-    throw new Error(err.value())
+    throw fsErrorForPath(path, true, err.value(), 'rmdir')
   }
 }
 
@@ -294,7 +328,7 @@ module.exports.lstatSync = function(path) {
   var result = fileManager.attributesOfItemAtPath_error(path, err)
 
   if (err.value() !== null) {
-    throw new Error(err.value())
+    throw fsErrorForPath(path, undefined, err.value())
   }
 
   return parseStat(result)
@@ -329,10 +363,17 @@ module.exports.truncateSync = function(path, len) {
 module.exports.unlinkSync = function(path) {
   var err = MOPointer.alloc().init()
   var fileManager = NSFileManager.defaultManager()
+  var isDirectory = module.exports.lstatSync(path).isDirectory()
+  if (isDirectory) {
+    throw fsError('EPERM', {
+      path: path,
+      syscall: 'unlink'
+    })
+  }
   var result = fileManager.removeItemAtPath_error(path, err)
 
   if (err.value() !== null) {
-    throw new Error(err.value())
+    throw fsErrorForPath(path, false, err.value())
   }
 }
 
@@ -344,7 +385,7 @@ module.exports.utimesSync = function(path, aTime, mTime) {
   }, path, err)
 
   if (err.value() !== null) {
-    throw new Error(err.value())
+    throw fsErrorForPath(path, undefined, err.value())
   }
 }
 
