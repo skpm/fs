@@ -196,15 +196,7 @@ module.exports.rmdirSync = function(path) {
   }
 }
 
-module.exports.statSync = function(path) {
-  var err = MOPointer.alloc().init()
-  var fileManager = NSFileManager.defaultManager()
-  var result = fileManager.attributesOfItemAtPath_error(path, err)
-
-  if (err.value() !== null) {
-    throw new Error(err.value())
-  }
-
+function parseStat(result) {
   return {
     dev: String(result.NSFileDeviceIdentifier),
     // ino: 48064969, The file system specific "Inode" number for the file.
@@ -232,6 +224,28 @@ module.exports.statSync = function(path) {
     isSocket: function() { return result.NSFileType === NSFileTypeSocket },
     isSymbolicLink: function() { return result.NSFileType === NSFileTypeSymbolicLink },
   }
+}
+
+module.exports.lstatSync = function(path) {
+  var err = MOPointer.alloc().init()
+  var fileManager = NSFileManager.defaultManager()
+  var result = fileManager.attributesOfItemAtPath_error(path, err)
+
+  if (err.value() !== null) {
+    throw new Error(err.value())
+  }
+
+  return parseStat(result)
+}
+
+// the only difference with lstat is that we resolve symlinks
+//
+// > lstat() is identical to stat(), except that if pathname is a symbolic
+// > link, then it returns information about the link itself, not the file
+// > that it refers to.
+// http://man7.org/linux/man-pages/man2/lstat.2.html
+module.exports.statSync = function(path) {
+  return module.exports.lstatSync(NSString.stringByResolvingSymlinksInPath(path))
 }
 
 module.exports.symlinkSync = function(target, path) {
