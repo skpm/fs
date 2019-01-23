@@ -1,4 +1,4 @@
-const { constants, accessSync, appendFileSync, existsSync, mkdirSync, readFileSync, rmdirSync, writeFileSync } = require('../')
+const { constants, accessSync, appendFileSync, existsSync, mkdirSync, readFileSync, rmdirSync, writeFileSync, renameSync } = require('../')
 
 function getScriptFolder(context) {
   const parts = context.scriptPath.split('/')
@@ -41,6 +41,17 @@ test('should append to a file', (context) => {
 
 test('should read a file', (context) => {
   expect(readFileSync(getScriptFolder(context) + '/test/test.txt', 'utf8')).toBe('testtest')
+})
+
+test('should rename a file', (context) => {
+  expect(renameSync(getScriptFolder(context) + '/test/test.txt', getScriptFolder(context) + '/test/test2.txt')).toBe(undefined)
+})
+
+test('should rename a file and overwrite existing file', (context) => {
+  expect(readFileSync(getScriptFolder(context) + '/test/test2.txt', 'utf8')).toBe('testtest')
+  expect(writeFileSync(getScriptFolder(context) + '/test/test.txt', 'test')).toBe(undefined)
+  expect(renameSync(getScriptFolder(context) + '/test/test.txt', getScriptFolder(context) + '/test/test2.txt')).toBe(undefined)
+  expect(readFileSync(getScriptFolder(context) + '/test/test2.txt', 'utf8')).toBe('test')
 })
 
 test('should throw an error when trying to create a directory when its parent does not exist', () => {

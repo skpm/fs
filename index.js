@@ -2,6 +2,27 @@
 // TODO: file descriptor. Needs to be done with NSFileHandle
 var Buffer = require('buffer').Buffer
 
+var ERROR_MESSAGES = {
+  '-2': 'no such file or directory',
+  '-13': 'permission denied',
+  '-21': 'illegal operation on a directory'
+}
+
+function fsError(options) {
+  var error = new Error(
+    options.code + ': '
+    + ERROR_MESSAGES[options.errno] + ', '
+    + options.syscall
+    + (options.path ? ' \'' + options.path + '\'' : '')
+  )
+
+  Object.keys(options).forEach(function (k) {
+    error[k] = options[k]
+  })
+
+  return error
+}
+
 function encodingFromOptions(options, defaultValue) {
   return options && options.encoding
     ? String(options.encoding)
@@ -149,6 +170,36 @@ module.exports.readFileSync = function(path, options) {
   var encoding = encodingFromOptions(options, 'buffer')
   var fileManager = NSFileManager.defaultManager()
   var data = fileManager.contentsAtPath(path)
+  if (!data) {
+    var doesExist = fileManager.fileExistsAtPath(path)
+    if (!doesExist) {
+      throw fsError({
+        errno: -2,
+        code: 'ENOENT',
+        syscall: 'open',
+        path: path
+      })
+    }
+    var isReadable = fileManager.isReadableFileAtPath(path)
+    if (!isReadable) {
+      throw fsError({
+        errno: -13,
+        code: 'EACCES',
+        syscall: 'open',
+        path: path
+      })
+    }
+    var isDirectory = fileManager.fileExistsAtPath_isDirectory(path, true)
+    if (isDirectory) {
+      throw fsError({
+        errno: -21,
+        code: 'EISDIR',
+        syscall: 'read'
+      })
+    }
+    throw new Error('Unknown error while reading file ' + path)
+  }
+
   var buffer = Buffer.from(data)
 
   if (encoding === 'buffer') {
@@ -181,8 +232,19 @@ module.exports.renameSync = function(oldPath, newPath) {
   var fileManager = NSFileManager.defaultManager()
   fileManager.moveItemAtPath_toPath_error(oldPath, newPath, err)
 
-  if (err.value() !== null) {
-    throw new Error(err.value())
+  var error = err.value()
+
+  if (error !== null) {
+    // if there is already a file, we need to overwrite it
+    if (String(error.domain()) === 'NSCocoaErrorDomain' && Number(error.code()) === 516) {
+      var err2 = MOPointer.alloc().init()
+      fileManager.replaceItemAtURL_withItemAtURL_backupItemName_options_resultingItemURL_error(NSURL.fileURLWithPath(newPath), NSURL.fileURLWithPath(oldPath), null, NSFileManagerItemReplacementUsingNewMetadataOnly, null, err2)
+      if (err2.value() !== null) {
+        throw new Error(err2.value())
+      }
+    } else {
+      throw new Error(error)
+    }
   }
 }
 
@@ -245,7 +307,7 @@ module.exports.lstatSync = function(path) {
 // > that it refers to.
 // http://man7.org/linux/man-pages/man2/lstat.2.html
 module.exports.statSync = function(path) {
-  return module.exports.lstatSync(NSString.stringByResolvingSymlinksInPath(path))
+  return module.exports.lstatSync(module.exports.realpathSync(path))
 }
 
 module.exports.symlinkSync = function(target, path) {
