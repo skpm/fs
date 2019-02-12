@@ -181,11 +181,11 @@ module.exports.linkSync = function(existingPath, newPath) {
   }
 }
 
-module.exports.mkdirSync = function(path, mode) {
+module.exports.mkdirSync = function(path, { recursive, mode }) {
   mode = mode || 0o777
   var err = MOPointer.alloc().init()
   var fileManager = NSFileManager.defaultManager()
-  fileManager.createDirectoryAtPath_withIntermediateDirectories_attributes_error(path, false, {
+  fileManager.createDirectoryAtPath_withIntermediateDirectories_attributes_error(path, recursive, {
     NSFilePosixPermissions: mode
   }, err)
 
