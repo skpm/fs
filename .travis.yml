@@ -21,4 +21,5 @@ script:
   - npm run test -- --app=/Applications/Sketch.app
 
 after_script:
+  - cat "~/Library/Logs/com.bohemiancoding.sketch3/Plugin Log.log" || true # log the plugin logs
   - rm "~/Library/App Support/com.bohemiancoding.sketch3/.deployment" # remove the Sketch license
