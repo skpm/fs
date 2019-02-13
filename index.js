@@ -184,11 +184,14 @@ module.exports.linkSync = function(existingPath, newPath) {
 module.exports.mkdirSync = function(path, options) {
   var mode = 0o777
   var recursive = false
+  if (options && options.mode) {
+    mode = options.mode
+  }
+  if (options && options.recursive) {
+    recursive = options.recursive
+  }
   if (typeof options === "number") {
     mode = options
-  } else if (typeof options === "object") {
-    mode = options.mode
-    recursive = options.recursive
   }
   var err = MOPointer.alloc().init()
   var fileManager = NSFileManager.defaultManager()
