@@ -29,10 +29,17 @@ test('should return the access of a file', (context) => {
 
 test('should create a directory', (context) => {
   expect(mkdirSync(getScriptFolder(context) + '/test')).toBe(undefined)
+  expect(existsSync(getScriptFolder(context) + '/test')).toBe(true)
+})
+
+test('should create a directory recursively', (context) => {
+  expect(mkdirSync(getScriptFolder(context) + '/test/nested/again', {recursive: true})).toBe(undefined)
+  expect(existsSync(getScriptFolder(context) + '/test/nested/again')).toBe(true)
 })
 
 test('should create a file', (context) => {
   expect(writeFileSync(getScriptFolder(context) + '/test/test.txt', 'test')).toBe(undefined)
+  expect(existsSync(getScriptFolder(context) + '/test/test.txt')).toBe(true)
 })
 
 test('should append to a file', (context) => {
