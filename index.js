@@ -282,7 +282,7 @@ module.exports.realpath = NOT_IMPLEMENTED("realpath");
 module.exports.realpath.native = NOT_IMPLEMENTED("realpath.native");
 
 module.exports.realpathSync = function(path) {
-  return String(NSString.stringByResolvingSymlinksInPath(path));
+  return String(NSString.stringWithString(path).stringByResolvingSymlinksInPath());
 };
 
 module.exports.realpathSync.native = NOT_IMPLEMENTED("realpathSync.native");
