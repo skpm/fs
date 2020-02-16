@@ -80,6 +80,7 @@ module.exports.appendFileSync = function(file, data, options) {
   ).toNSData();
 
   handle.writeData(nsdata);
+  handle.closeFile();
 };
 
 module.exports.chmod = NOT_IMPLEMENTED("chmod");
