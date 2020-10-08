@@ -3,6 +3,7 @@
   "version": "0.2.6",
   "description": "A sketch module to interact with the file system",
   "main": "index.js",
+  "types": "./type.d.ts",
   "scripts": {
     "test": "skpm-test --app=latest"
   },
@@ -23,6 +24,7 @@
   },
   "homepage": "https://github.com/skpm/fs#readme",
   "devDependencies": {
-    "@skpm/test-runner": "^0.3.13"
+    "@skpm/test-runner": "^0.3.13",
+    "@types/node": "^14.11.5"
   }
 }
