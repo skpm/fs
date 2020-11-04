@@ -6,5 +6,16 @@ All the sync [nodejs fs](https://nodejs.org/api/fs.html) API is available.
 
 `fs.writeFileSync`, `fs.appendFileSync` and `fs.readFileSync` accept an `NSData` as encoding
 
-# install
-npm i @skpm/fs
+## Installation
+
+```
+npm install @skpm/fs
+```
+
+## Usage
+
+```
+const fs = require('@skpm/fs')
+
+fs.readFileSync('/path/to/file')
+```
