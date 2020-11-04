@@ -8,13 +8,13 @@ All the sync [nodejs fs](https://nodejs.org/api/fs.html) API is available.
 
 ## Installation
 
-```
+```bash
 npm install @skpm/fs
 ```
 
 ## Usage
 
-```
+```js
 const fs = require('@skpm/fs')
 
 fs.readFileSync('/path/to/file')
