@@ -21,6 +21,7 @@ module.exports.accessSync = function (path, mode) {
   mode = mode | 0;
   var fileManager = NSFileManager.defaultManager();
 
+  var canAccess
   switch (mode) {
     case 0:
       canAccess = module.exports.existsSync(path);
